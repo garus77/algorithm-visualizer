@@ -3,7 +3,7 @@
 
 enum Choices{
     NONE=0,
-    BUBBLE_SORT, SELECTION_SORT, INSERTION_SORT, BFSPATH, DFSPATH, DIJKSTRA, BFSGRAPH, DFGRAPH,
+    BUBBLE_SORT, SELECTION_SORT, INSERTION_SORT, BFS_PATH, DFS_PATH, DIJKSTRA, BFS_GRAPH, DFS_RAPH,
     MAX
 };
 
@@ -39,7 +39,7 @@ void render(sf::RenderWindow& window){
 
 void getChoice(int& choice){
     while(true){
-        std::cout<<"******************************\nAlgorithms:\n";
+        std::cout<<"**************************************************\nAlgorithms:\n";
         for(int i=NONE+1; i<MAX; i++){
             switch(i){
                 case 1: std::cout<<"  Sorting:\n"; break;
@@ -48,15 +48,15 @@ void getChoice(int& choice){
             }
             std::cout<<"    "<<i<<" - "<<choiceNames[i]<<'\n';
         }
-        std::cout<<"******************************\nType a value for an algorithm to be visualized:\n";
+        std::cout<<"**************************************************\nType a value for an algorithm to be visualized or 0 to exit:\n";
         if(!(std::cin>>choice)){
             std::cin.clear();
             std::cin.ignore(INT_MAX-1,'\n');
             std::cout<<unknownValueError<<std::endl;
             continue;
         }
-        if(choice>NONE && choice<MAX){
-            std::cout<<"Visualizing ["<<choiceNames[choice]<<"]..."<<std::endl;
+        if(choice>=NONE && choice<MAX){
+            if(choice)std::cout<<"Visualizing ["<<choiceNames[choice]<<"]..."<<std::endl;
             break;
         }
         std::cout<<unknownValueError<<std::endl;
@@ -66,6 +66,7 @@ void getChoice(int& choice){
 int main(){
     int choice=NONE;
     getChoice(choice);
+    if(!choice) return 0;
 
     sf::Clock clock;
     sf::RenderWindow window(windowBase,choiceNames[choice],sf::Style::Close);
@@ -78,5 +79,6 @@ int main(){
         render(window);
     }
 
+    std::cout<<"\nByebyee!\n";
     return 0;
 }
