@@ -1,5 +1,4 @@
 #include <SFML/Graphics.hpp>
-#include <iostream>
 
 const sf::VideoMode windowBase(800,800);
 
@@ -30,8 +29,6 @@ int main(){
     sf::Clock clock;
     sf::RenderWindow window(windowBase,"TITLE",sf::Style::Close);
     window.setFramerateLimit(60);
-
-    std::cout<<SFML_VERSION_MAJOR<<SFML_VERSION_MINOR<<SFML_VERSION_PATCH;
 
     //game loop
     while(running){
