@@ -194,26 +194,28 @@ void getChoice(int& choice){
 
 int main(){
     std::srand(static_cast<unsigned>(std::time(nullptr)));
-    int choice=NONE;
-    getChoice(choice);
+    while(true){
+        int choice=NONE;
+        getChoice(choice);
 
 
-    switch(choice){
-        case NONE: return 0;
-        case BUBBLE_SORT: initSortingPillars(20); break;
+        switch(choice){
+            case NONE: return 0;
+            case BUBBLE_SORT: initSortingPillars(20); break;
+        }
+
+        sf::Clock clock;
+        sf::RenderWindow window(windowBase,choiceNames[choice],sf::Style::Close);
+        window.setFramerateLimit(60);
+        //game loop
+        while(window.isOpen()){
+            float deltaTime=clock.restart().asSeconds();
+            handleEvents(window);
+            update(deltaTime);
+            render(window);
+        }
+        std::cout<<"Exited that one, You should try another one!"<<std::endl;
     }
-
-    sf::Clock clock;
-    sf::RenderWindow window(windowBase,choiceNames[choice],sf::Style::Close);
-    window.setFramerateLimit(60);
-    //game loop
-    while(window.isOpen()){
-        float deltaTime=clock.restart().asSeconds();
-        handleEvents(window);
-        update(deltaTime);
-        render(window);
-    }
-
     std::cout<<"\nByebyee!\n";
     return 0;
 }
