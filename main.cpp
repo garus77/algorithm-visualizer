@@ -35,8 +35,8 @@ public:
     void draw(sf::RenderTarget& renderTarget){
         renderTarget.draw(m_shape);
     }
-    void toggleFocusColor(){
-        if(m_shape.getOutlineColor()==sf::Color::Red){
+    void setFocus(bool state){
+        if(state){
             m_shape.setOutlineColor(sf::Color::Green);
             m_shape.setOutlineThickness(-2);
         }
@@ -53,7 +53,60 @@ private:
     sf::Vector2f m_size;
 };
 
+class BubbleSorter{
+public:
+    BubbleSorter(std::vector<SortingPillar>& pillars): 
+        m_pillars(pillars) {
+        reset();
+        }
+    void reset(){
+        m_i=0;
+        m_j=0;
+        m_swapped=false;
+        m_done=false;
+    }
+    void step(){
+        if(m_done){
+            for(auto& it:m_pillars) it.setFocus(true);
+            return;
+        }
+        int n=m_pillars.size();
+        if(m_pillars[m_j].m_value>m_pillars[m_j+1].m_value){
+            std::swap(m_pillars[m_j].m_value, m_pillars[m_j+1].m_value);
+            std::swap(m_pillars[m_j].m_position, m_pillars[m_j+1].m_position);
+            m_swapped=true;
+        }
+        m_j++;
+        if(m_j >= n - m_i -1) {
+            if(!m_swapped) {
+                m_done = true;
+                for(auto& it:m_pillars) it.setFocus(true);
+                return;
+            }
+            m_swapped = false;
+            m_j = 0;
+            m_i++;
+            if(m_i >= n-1){
+                m_done = true;
+                for(auto& it:m_pillars) it.setFocus(true);
+            }
+        }
+        for(auto& it:m_pillars) it.setFocus(false);
+        m_pillars[m_j].setFocus(true);
+        m_pillars[m_j+1].setFocus(true);
+    }
+    bool isDone(){
+        return m_done;
+    }
+private:
+    std::vector<SortingPillar>& m_pillars;
+    int m_i, m_j;
+    bool m_swapped;
+    bool m_done;
+};
+
 std::vector<SortingPillar> sortingPillars;
+BubbleSorter bubbleSorter(sortingPillars);
 
 void initSortingPillars(int nr){
     for(int i=1; i<=nr; i++){
@@ -68,33 +121,17 @@ void initSortingPillars(int nr){
             ),
             i
         );
-        //std::cout<<i<<". pillar Position: "<<i*windowBase.width/nr<<" "<<windowBase.height<<" Size: "<<windowBase.width/nr<<" "<<i*windowBase.height/nr<<std::endl;
     }
 }
 
 void shufflePillars(std::vector<SortingPillar>& pillars){
     int n=pillars.size();
     for(int i=0; i<n; i++){
+        pillars[i].setFocus(0);
         int random=rand()%n;
         if(i+1+random>=n) random-=n;
         std::swap(pillars[i].m_value,pillars[i+1+random].m_value);
         std::swap(pillars[i].m_position,pillars[i+1+random].m_position);
-    }
-}
-
-void bubbleSortPillars(std::vector<SortingPillar>& pillars){
-    int n=pillars.size();
-    bool swapped;
-    for(int i=0; i<n-1; i++){
-        swapped=false;
-        for(int j=0; j<n-i-1; j++){
-            if(pillars[j].m_value>pillars[j+1].m_value){
-                std::swap(pillars[j].m_value,pillars[j+1].m_value);
-                std::swap(pillars[j].m_position,pillars[j+1].m_position);
-                swapped=true;
-            }
-        }
-        if(!swapped) break;
     }
 }
 
@@ -106,14 +143,19 @@ void handleEvents(sf::RenderWindow& window){
     while(window.pollEvent(event)){
         if(event.type==sf::Event::Closed) window.close();
         if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::Escape) window.close();
-        if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::D) bubbleSortPillars(sortingPillars);
-        if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::R) shufflePillars(sortingPillars);
-        if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::F) sortingPillars[0].toggleFocusColor();
+        if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::D) {
+            bubbleSorter.step();
+        }
+        if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::R) {
+            shufflePillars(sortingPillars);
+            bubbleSorter.reset();
+        }
     }
 }
 
 void update(const float deltaTime){
     for(auto& it:sortingPillars) it.update(deltaTime);
+    if(!bubbleSorter.isDone())bubbleSorter.step();
 }
 
 void render(sf::RenderWindow& window){
