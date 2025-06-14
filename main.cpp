@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <vector>
 
 enum Choices{
     NONE=0,
@@ -15,6 +16,62 @@ constexpr const char* unknownValueError="Unknown value!\n";
 
 const sf::VideoMode windowBase(800,800);
 
+class SortingPillar{
+public:
+    SortingPillar(sf::Vector2f position, sf::Vector2f size, int value):
+        m_position(position), m_size(size), m_value(value){
+        m_shape.setFillColor(sf::Color::White);
+        m_shape.setOutlineColor(sf::Color::Red);
+        m_shape.setOutlineThickness(-1);
+        m_shape.setOrigin((position.x+size.x)*0.5f,(position.y+size.y)*0.5f);
+        m_shape.setPosition(position);
+        m_shape.setSize(size);
+    }
+    void update(const float deltaTime){
+        m_shape.setPosition(m_position);
+        m_shape.setSize(m_size);
+    }
+    void draw(sf::RenderTarget& renderTarget){
+        renderTarget.draw(m_shape);
+    }
+    void setPosition(const sf::Vector2f& newPosition){
+        m_position=newPosition;
+    }
+    void setSize(const sf::Vector2f& newSize){
+        m_size=newSize;
+    }
+public:
+    sf::Vector2f m_position;
+    int m_value;
+private:
+    sf::RectangleShape m_shape;
+    sf::Vector2f m_size;
+};
+
+std::vector<SortingPillar> sortingPillars;
+
+void initSortingPillars(int nr){
+    for(int i=0; i<nr; i++){
+        sortingPillars.emplace_back(sf::Vector2f(windowBase.width/nr*i,windowBase.height),sf::Vector2f(windowBase.width/nr,windowBase.height-windowBase.height/nr*i),i);
+    }
+}
+
+void bubbleSortPillars(std::vector<SortingPillar>& pillars){
+    int n=pillars.size();
+    bool swapped;
+    for(int i=0; i<n-1; i++){
+        swapped=false;
+        for(int j=0; j<n-i-1; j++){
+            if(pillars[j].m_value<pillars[j+1].m_value){
+                std::swap(pillars[j].m_value,pillars[j+1].m_value);
+                std::swap(pillars[j].m_position,pillars[j+1].m_position);
+                swapped=true;
+            }
+        }
+        if(!swapped) break;
+    }
+}
+
 /* KEYBINDS
 Esc - exit
 */
@@ -26,13 +83,14 @@ void handleEvents(sf::RenderWindow& window){
     }
 }
 
-void update(float deltaTime){
+void update(const float deltaTime){
+    for(auto& it:sortingPillars) it.update(deltaTime);
 }
 
 void render(sf::RenderWindow& window){
     window.clear();
 
-    
+    for(auto& it:sortingPillars) it.draw(window);
 
     window.display();
 }
@@ -66,7 +124,12 @@ void getChoice(int& choice){
 int main(){
     int choice=NONE;
     getChoice(choice);
-    if(!choice) return 0;
+
+
+    switch(choice){
+        case NONE: return 0;
+        case BUBBLE_SORT: initSortingPillars(10); break;
+    }
 
     sf::Clock clock;
     sf::RenderWindow window(windowBase,choiceNames[choice],sf::Style::Close);
