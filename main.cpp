@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <vector>
+#include <ctime>
 
 enum Choices{
     NONE=0,
@@ -23,7 +24,7 @@ public:
         m_shape.setFillColor(sf::Color::White);
         m_shape.setOutlineColor(sf::Color::Red);
         m_shape.setOutlineThickness(-1);
-        m_shape.setOrigin((position.x+size.x)*0.5f,(position.y+size.y)*0.5f);
+        m_shape.setOrigin(size);
         m_shape.setPosition(position);
         m_shape.setSize(size);
     }
@@ -34,11 +35,15 @@ public:
     void draw(sf::RenderTarget& renderTarget){
         renderTarget.draw(m_shape);
     }
-    void setPosition(const sf::Vector2f& newPosition){
-        m_position=newPosition;
-    }
-    void setSize(const sf::Vector2f& newSize){
-        m_size=newSize;
+    void toggleFocusColor(){
+        if(m_shape.getOutlineColor()==sf::Color::Red){
+            m_shape.setOutlineColor(sf::Color::Green);
+            m_shape.setOutlineThickness(-2);
+        }
+        else{
+            m_shape.setOutlineColor(sf::Color::Red);
+            m_shape.setOutlineThickness(-1);
+        }
     }
 public:
     sf::Vector2f m_position;
@@ -51,8 +56,29 @@ private:
 std::vector<SortingPillar> sortingPillars;
 
 void initSortingPillars(int nr){
-    for(int i=0; i<nr; i++){
-        sortingPillars.emplace_back(sf::Vector2f(windowBase.width/nr*i,windowBase.height),sf::Vector2f(windowBase.width/nr,windowBase.height-windowBase.height/nr*i),i);
+    for(int i=1; i<=nr; i++){
+        sortingPillars.emplace_back(
+            sf::Vector2f(
+                i*windowBase.width/nr,
+                windowBase.height
+            ),
+            sf::Vector2f(
+                windowBase.width/nr,
+                i*windowBase.height/nr
+            ),
+            i
+        );
+        //std::cout<<i<<". pillar Position: "<<i*windowBase.width/nr<<" "<<windowBase.height<<" Size: "<<windowBase.width/nr<<" "<<i*windowBase.height/nr<<std::endl;
+    }
+}
+
+void shufflePillars(std::vector<SortingPillar>& pillars){
+    int n=pillars.size();
+    for(int i=0; i<n; i++){
+        int random=rand()%n;
+        if(i+1+random>=n) random-=n;
+        std::swap(pillars[i].m_value,pillars[i+1+random].m_value);
+        std::swap(pillars[i].m_position,pillars[i+1+random].m_position);
     }
 }
 
@@ -62,7 +88,7 @@ void bubbleSortPillars(std::vector<SortingPillar>& pillars){
     for(int i=0; i<n-1; i++){
         swapped=false;
         for(int j=0; j<n-i-1; j++){
-            if(pillars[j].m_value<pillars[j+1].m_value){
+            if(pillars[j].m_value>pillars[j+1].m_value){
                 std::swap(pillars[j].m_value,pillars[j+1].m_value);
                 std::swap(pillars[j].m_position,pillars[j+1].m_position);
                 swapped=true;
@@ -80,6 +106,9 @@ void handleEvents(sf::RenderWindow& window){
     while(window.pollEvent(event)){
         if(event.type==sf::Event::Closed) window.close();
         if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::Escape) window.close();
+        if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::D) bubbleSortPillars(sortingPillars);
+        if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::R) shufflePillars(sortingPillars);
+        if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::F) sortingPillars[0].toggleFocusColor();
     }
 }
 
@@ -122,13 +151,14 @@ void getChoice(int& choice){
 }
 
 int main(){
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
     int choice=NONE;
     getChoice(choice);
 
 
     switch(choice){
         case NONE: return 0;
-        case BUBBLE_SORT: initSortingPillars(10); break;
+        case BUBBLE_SORT: initSortingPillars(20); break;
     }
 
     sf::Clock clock;
