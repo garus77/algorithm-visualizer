@@ -331,10 +331,12 @@ int main(){
             }
         }
 
-        sf::Clock clock;
+        int frameRate;
+        getIntChoice("Sorting framerate cap (0 for uncapped - 1000): ", frameRate, 0, 1000);
         sf::RenderWindow window(windowBase,choiceAlgorithmNames[choiceAlgorithm],sf::Style::Close);
-        window.setFramerateLimit(60);
+        if(frameRate) window.setFramerateLimit(frameRate);
         //game loop
+        sf::Clock clock;
         while(window.isOpen()){
             float deltaTime=clock.restart().asSeconds();
             handleEvents(window);
