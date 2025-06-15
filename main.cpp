@@ -28,7 +28,7 @@ public:
         m_shape.setPosition(position);
         m_shape.setSize(size);
     }
-    void update(const float deltaTime){
+    void update(/*const float deltaTime*/){
         m_shape.setPosition(m_position);
         m_shape.setSize(m_size);
     }
@@ -71,6 +71,8 @@ public:
             return;
         }
         int n=m_pillars.size();
+        m_pillars[m_j].setFocus(false);
+        m_pillars[m_j+1].setFocus(false);
         if(m_pillars[m_j].m_value>m_pillars[m_j+1].m_value){
             std::swap(m_pillars[m_j].m_value, m_pillars[m_j+1].m_value);
             std::swap(m_pillars[m_j].m_position, m_pillars[m_j+1].m_position);
@@ -91,7 +93,6 @@ public:
                 for(auto& it:m_pillars) it.setFocus(true);
             }
         }
-        for(auto& it:m_pillars) it.setFocus(false);
         m_pillars[m_j].setFocus(true);
         m_pillars[m_j+1].setFocus(true);
     }
@@ -105,8 +106,70 @@ private:
     bool m_done;
 };
 
+class SelectionSorter {
+public:
+    SelectionSorter(std::vector<SortingPillar>& pillars)
+    : m_pillars(pillars)
+    { reset(); }
+
+    void reset() {
+        m_i = 0;
+        m_j = 1;
+        m_minIndex = 0;
+        m_done = false;
+        for (auto& p : m_pillars) p.setFocus(false);
+    }
+
+    void step() {
+        int n = m_pillars.size();
+        if (m_done) {
+            for (auto& p : m_pillars) p.setFocus(true);
+            return;
+        }
+
+        // clear previous highlights
+        for (auto& p : m_pillars) p.setFocus(false);
+
+        // scan for new minimum in [m_i+1 .. n)
+        if (m_pillars[m_j].m_value < m_pillars[m_minIndex].m_value)
+            m_minIndex = m_j;
+
+        // advance j
+        ++m_j;
+        if (m_j >= n) {
+            // end of scan: swap min into position m_i
+            if (m_minIndex != m_i) {
+                std::swap(m_pillars[m_i].m_value,    m_pillars[m_minIndex].m_value);
+                std::swap(m_pillars[m_i].m_position, m_pillars[m_minIndex].m_position);
+            }
+            ++m_i;
+            if (m_i >= n - 1) {
+                m_done = true;
+                for (auto& p : m_pillars) p.setFocus(true);
+                return;
+            }
+            // reset scan for next pass
+            m_minIndex = m_i;
+            m_j = m_i + 1;
+        }
+
+        // highlight boundary and current minimum
+        m_pillars[m_i].setFocus(true);
+        m_pillars[m_j].setFocus(true);
+        m_pillars[m_minIndex].setFocus(true);
+    }
+
+    bool isDone() const { return m_done; }
+
+private:
+    std::vector<SortingPillar>& m_pillars;
+    int m_i, m_j, m_minIndex;
+    bool m_done;
+};
+
 std::vector<SortingPillar> sortingPillars;
 BubbleSorter bubbleSorter(sortingPillars);
+SelectionSorter selectionSorter(sortingPillars);
 
 void initSortingPillars(int nr){
     sortingPillars.clear();
@@ -147,21 +210,9 @@ void handleEvents(sf::RenderWindow& window){
         if(event.type==sf::Event::KeyPressed && event.key.code==sf::Keyboard::R) {
             shufflePillars(sortingPillars);
             bubbleSorter.reset();
+            selectionSorter.reset();
         }
     }
-}
-
-void update(const float deltaTime){
-    for(auto& it:sortingPillars) it.update(deltaTime);
-    if(!bubbleSorter.isDone()) bubbleSorter.step();
-}
-
-void render(sf::RenderWindow& window){
-    window.clear();
-
-    for(auto& it:sortingPillars) it.draw(window);
-
-    window.display();
 }
 
 void writeAlgorithmMenu(){
@@ -203,7 +254,9 @@ int main(){
 
         switch(choiceAlgorithm){
             case NONE: return 0;
-            case BUBBLE_SORT:{
+            case BUBBLE_SORT: bubbleSorter.reset();
+            case SELECTION_SORT:{
+                selectionSorter.reset();
                 int nrPillars=2;
                 getIntChoice("Number of values to sort (2 - 100): ", nrPillars, 2, 100);
                 initSortingPillars(nrPillars); 
@@ -222,8 +275,23 @@ int main(){
         while(window.isOpen()){
             float deltaTime=clock.restart().asSeconds();
             handleEvents(window);
-            update(deltaTime);
-            render(window);
+            //update(deltaTime);
+            for(auto& it:sortingPillars) it.update();
+            switch(choiceAlgorithm){
+                case BUBBLE_SORT:{
+                    if(!bubbleSorter.isDone()) bubbleSorter.step();
+                    break;
+                }
+                case SELECTION_SORT:{
+                    if(!selectionSorter.isDone()) selectionSorter.step();
+                    break;
+                }
+            }
+            
+            //render(window);
+            window.clear();
+            for(auto& it:sortingPillars) it.draw(window);
+            window.display();
         }
         std::cout<<"Exited that one, you should try another!"<<std::endl;
     }
