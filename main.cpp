@@ -167,9 +167,70 @@ private:
     bool m_done;
 };
 
+class InsertionSorter {
+public:
+    InsertionSorter(std::vector<SortingPillar>& pillars)
+    : m_pillars(pillars)
+    { reset(); }
+
+    void reset() {
+        m_i    = 1;        // next element to “insert”
+        m_j    = 1;        // scan position
+        m_done = false;
+        for (auto& p : m_pillars) p.setFocus(false);
+    }
+
+    void step() {
+        int n = m_pillars.size();
+        if (m_done) {
+            for (auto& p : m_pillars) p.setFocus(true);
+            return;
+        }
+
+        // clear last highlight
+        if (m_j > 0) {
+            m_pillars[m_j].setFocus(false);
+            m_pillars[m_j - 1].setFocus(false);
+        }
+
+        // if out of bounds or in right place, advance i
+        if (m_j == 0 ||
+            m_pillars[m_j].m_value >= m_pillars[m_j - 1].m_value)
+        {
+            m_i++;
+            m_j = m_i;
+            if (m_i >= n) {
+                m_done = true;
+                for (auto& p : m_pillars) p.setFocus(true);
+                return;
+            }
+        }
+        // otherwise, swap down one step
+        else {
+            std::swap(m_pillars[m_j].m_value,    m_pillars[m_j - 1].m_value);
+            std::swap(m_pillars[m_j].m_position, m_pillars[m_j - 1].m_position);
+            m_j--;
+        }
+
+        // highlight the two being compared/swapped
+        if (m_j > 0) {
+            m_pillars[m_j].setFocus(true);
+            m_pillars[m_j - 1].setFocus(true);
+        }
+    }
+
+    bool isDone() const { return m_done; }
+
+private:
+    std::vector<SortingPillar>& m_pillars;
+    int m_i, m_j;
+    bool m_done;
+};
+
 std::vector<SortingPillar> sortingPillars;
 BubbleSorter bubbleSorter(sortingPillars);
 SelectionSorter selectionSorter(sortingPillars);
+InsertionSorter insertionSorter(sortingPillars);
 
 void initSortingPillars(int nr){
     sortingPillars.clear();
@@ -211,6 +272,7 @@ void handleEvents(sf::RenderWindow& window){
             shufflePillars(sortingPillars);
             bubbleSorter.reset();
             selectionSorter.reset();
+            insertionSorter.reset();
         }
     }
 }
@@ -255,8 +317,9 @@ int main(){
         switch(choiceAlgorithm){
             case NONE: return 0;
             case BUBBLE_SORT: bubbleSorter.reset();
-            case SELECTION_SORT:{
-                selectionSorter.reset();
+            case SELECTION_SORT: selectionSorter.reset();
+            case INSERTION_SORT:{
+                insertionSorter.reset();
                 int nrPillars=2;
                 getIntChoice("Number of values to sort (2 - 100): ", nrPillars, 2, 100);
                 initSortingPillars(nrPillars); 
@@ -284,6 +347,10 @@ int main(){
                 }
                 case SELECTION_SORT:{
                     if(!selectionSorter.isDone()) selectionSorter.step();
+                    break;
+                }
+                case INSERTION_SORT:{
+                    if(!insertionSorter.isDone()) insertionSorter.step();
                     break;
                 }
             }
