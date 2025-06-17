@@ -1,4 +1,4 @@
-#include "main.h"
+#include "heathers/main.h"
 
 enum AlgorithmChoices
 {
